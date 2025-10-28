@@ -207,9 +207,20 @@ class Parser:
         handle the optional else part, which also has a colon and a block. It constructs and
         returns an `IfStatement` AST node with the condition, then-block, and optional else-block.
         """
-        
-        
-        pass
+        self.expect('IF')
+        condition = self.parse_boolean_expression()
+
+        self.expect('COLON')
+        then_block= self.parse_block()
+
+        else_block=None
+
+        if self.current_token()[0] == "ELSE":
+            self.expect("ELSE")
+            self.expect("COLON")
+            else_block = self.parse_block
+
+        return IfStatement(condition, then_block, else_block)
 
     # TODO: Implement this function
     def parse_for_stmt(self) -> ForStatement:
