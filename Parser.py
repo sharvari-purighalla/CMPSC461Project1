@@ -2,6 +2,7 @@ import re
 from typing import List, Tuple, Any, Union
 from ASTNodeDefs import *
 
+
 # A type alias for clarity, representing parts of expressions
 # that can be a full ASTNode or a simple token tuple (like for numbers/identifiers).
 ExprType = Union[ASTNode, Tuple[str, Any]]
@@ -69,7 +70,38 @@ class Lexer:
         The process ends when the entire code string is consumed, at which point an
         'EOF' (End of File) token is appended to signify the end of the input.
         """
-        pass
+        list_token = []
+
+        for i in re.finditer(self.token_regex, self.code):
+
+            value = i.group()
+            type_of_value = i.lastgroup
+
+            if type_of_value == "SKIP":
+                continue
+
+            elif type_of_value == "NUMBER":
+                list_token.append((type_of_value,int(value)))
+
+            elif type_of_value == "IDENTIFIER":
+                key = ['IF', 'ELSE', 'FOR', 'TO','PRINT', 'AND', 'OR', 'NOT']
+                if value in key:
+                    list_token.append((key[value],value))
+                else:
+                    list_token.append((type_of_value,value))
+
+            elif type_of_value == "MISMATCH":
+                raise SyntaxError(
+                    f"Unexpected token '{list_token}'"
+                    "Expected 'NUMBER', 'IDENTIFIER', or other."
+                )
+            else:
+                list_token.append((type_of_value,value))
+
+        list_token.append(('EOF',None))
+
+        return list_token
+
 
 class Parser:
     """
@@ -141,7 +173,27 @@ class Parser:
         - If it's a 'PRINT', it calls `parse_print_stmt()`.
         This routing is the essence of a top-down recursive descent parser.
         """
-        pass
+        token_type = self.current_token()
+        
+        if token_type == 'IF':
+            return self.parse_if_stmt()
+        elif token_type == 'FOR':
+            return self.parse_for_stmt()
+        elif token_type == 'PRINT':
+            return self.parse_print_stmt()
+        elif token_type == 'IDENTIFIER':
+            identifier_token = self.expect('IDENTIFIER')
+            self.expect('EQUALS')
+            expr = self.parse_expression()
+            return ('ASSIGN', identifier_token[1], expr)
+        
+        else:
+            raise SyntaxError(
+                f"Unexpected token '{token_type}' at position {self.pos}. "
+                "Expected 'IF', 'FOR', 'PRINT', or 'IDENTIFIER'."
+            )
+    
+
 
     # TODO: Implement this function
     def parse_if_stmt(self) -> IfStatement:
@@ -155,6 +207,8 @@ class Parser:
         handle the optional else part, which also has a colon and a block. It constructs and
         returns an `IfStatement` AST node with the condition, then-block, and optional else-block.
         """
+        
+        
         pass
 
     # TODO: Implement this function
