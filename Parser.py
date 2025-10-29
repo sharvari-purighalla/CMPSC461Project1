@@ -392,7 +392,16 @@ class Parser:
         `parse_expression()` again for the right-hand side, creating a `BinaryOperation` node.
         If not, it just returns the left-hand side node it already parsed.
         """
-        pass
+        left = self.parse_expression()
+
+        if self.current_token()[0] in ['PLUS', 'MINUS', 'MULTIPLY', 'DIVIDE', 'MODULO', 'EQ', 'NEQ', 'GREATER', 'LESS', 'EQUALS']:
+            operator = self.current_token()
+            self.advance()
+            right = self.parse_expression()
+            return BinaryOperation(left, operator, right)
+        
+        return left
+            
 
     # TODO: Implement this function
     def parse_expression(self) -> ExprType:
@@ -404,7 +413,15 @@ class Parser:
         calls `parse_term()` to get a higher-precedence operand. It then loops as long as it
         sees a 'PLUS' or 'MINUS' token, building `BinaryOperation` nodes in a left-associative way.
         """
-        pass
+        left = self.parse_term()
+        while self.current_token()[0] in ['PLUS', 'MINUS']:
+            operator = self.current_token()
+            self.advance()
+            right = self.parse_term()
+            return BinaryOperation(left, operator, right)
+        
+        return left
+        
 
     # TODO: Implement this function
     def parse_term(self) -> ExprType:
@@ -415,7 +432,14 @@ class Parser:
         What this function does: It calls `parse_factor()` to get its operands and loops on
         '*', '/', and '%' operators. This ensures that `a + b * c` is correctly parsed as `a + (b * c)`.
         """
-        pass
+        left = self.parse_factor()
+        while self.current_token()[0] in ['MULTIPLY', 'MODULO', 'DIVIDE']:
+            operator = self.current_token()
+            self.advance()
+            right = self.parse_factor()
+            return BinaryOperation(left, operator, right)
+        
+        return left
 
     # TODO: Implement this function
     def parse_factor(self) -> ExprType:
@@ -427,7 +451,15 @@ class Parser:
         recursively calls `parse_factor()` for the operand, and returns a `UnaryOperation` node.
         If not, it calls `parse_primary()` for the highest-precedence elements.
         """
-        pass
+
+        if self.current_token()[0] in ['PLUS','MINUS']:
+            operator = self.current_token()
+            self.advance()
+            operand = self.parse_factor()
+            return UnaryOperation(operator, operand)
+
+        else:
+            return self.parse_primary()        
 
     # TODO: Implement this function
     def parse_primary(self) -> ExprType:
@@ -439,8 +471,34 @@ class Parser:
         What this function does: It checks for three cases:
         1. A 'NUMBER' token.
         2. An 'IDENTIFIER' token (a variable).
-        3. An opening parenthesis 'LPAREN'. If found, it recursively calls `parse_boolean_expression()`
+        3. An opening parenthesis 'LPAREN'.If found, it recursively calls `parse_boolean_expression()`
            to parse the entire expression inside the parentheses, and then expects a closing 'RPAREN'.
            This allows for manually overriding operator precedence (e.g., `(a + b) * c`).
         """
-        pass
+        beatuup= self.current_token()
+
+        if beatuup(0) in ['NUMBER']:
+            self.advance()
+            return beatuup
+
+        elif beatuup(0) in ['IDENTIFIER']:
+            self.advance()
+            return beatuup
+
+        elif beatuup(0) in ['LPAREN']:
+            self.advance()
+            expr = self.parse_boolean_expression()
+            self.expect('RPAREN') 
+            return expr
+
+        else:
+            raise SyntaxError(
+                f"Expected NUMBER, IDENTIFIER, or '(' but got {beatuup} at position {self.pos}"
+            )
+
+            
+
+
+
+
+        
