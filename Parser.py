@@ -215,12 +215,13 @@ class Parser:
 
         else_block=None
 
-        if self.current_token()[0] == "ELSE":
-            self.expect("ELSE")
-            self.expect("COLON")
+        if self.current_token()[0] == 'ELSE':
+            self.expect('ELSE')
+            self.expect('COLON')
             else_block = self.parse_block
 
         return IfStatement(condition, then_block, else_block)
+
 
     # TODO: Implement this function
     def parse_for_stmt(self) -> ForStatement:
@@ -232,7 +233,20 @@ class Parser:
         'TO', an expression for the end value, and a 'COLON'. Finally, it calls `parse_block()`
         for the loop's body. It bundles all this information into a `ForStatement` AST node.
         """
-        pass
+        self.expect('FOR')
+        iterator  = self.expect("IDENTIFIER")[1]
+
+        self.expect('EQUALS')
+        start_str = self.parse_expression()
+
+        self.expect('TO')
+        end_str = self.parse_expression()
+
+        self.expect('COLON')
+        block = self.parse_block()
+
+        return ForStatement(iterator, start_str, end_str, block)
+
 
     # TODO: Implement this function
     def parse_print_stmt(self) -> PrintStatement:
@@ -244,7 +258,17 @@ class Parser:
         parentheses. Finally, it consumes the closing parenthesis 'RPAREN' and returns a
         `PrintStatement` AST node containing the list of arguments.
         """
-        pass
+        #print(x,y)
+
+        self.expect("PRINT")
+
+        self.expect("LPAREN")
+        arguments = self.parse_arg_list()
+
+        self.expect("RPAREN")
+
+        return PrintStatement(arguments)
+
 
     # TODO: Implement this function
     def parse_block(self) -> Block:
@@ -257,7 +281,13 @@ class Parser:
         of the block (in our simplified language, 'ELSE' or the end of the file). It returns a
         `Block` AST node containing the list of parsed statements.
         """
-        pass
+        statements = []
+
+        while self.current_token()[0] not in ('ELSE', 'EOF'):
+            statements.append(self.parse_statement())
+
+        return Block(statements)
+    
 
     # TODO: Implement this function
     def parse_arg_list(self) -> List[ExprType]:
@@ -269,7 +299,27 @@ class Parser:
         continues as long as the current token is a 'COMMA'. Inside the loop, it consumes the
         comma and parses the next expression. It returns a list of all the parsed expression nodes.
         """
-        pass
+        lst = [] 
+
+        if self.current_token()[0] == 'RPAREN':
+            return lst
+
+
+        while self.current_token()[0] != "RPAREN":
+            expr = self.parse_expression()
+            lst.append(expr)
+
+
+
+            if self.current_token()[0] == 'COMMA':
+                self.advance()
+
+            elif self.current_token()[0] != 'RPAREN':
+                raise SyntaxError (f"boooo")
+            
+
+        return lst
+
 
     # TODO: Implement this function
     def parse_boolean_expression(self) -> ExprType:
@@ -282,8 +332,16 @@ class Parser:
         Then, it loops as long as it sees an 'OR' token. In the loop, it creates a `LogicalOperation`
         node with the left side, the 'OR' operator, and the result of parsing the right side.
         This left-associative structure correctly handles chains like `A or B or C`.
-        """
-        pass
+        """    
+        left = self.parse_boolean_term()
+
+        while self.current_token()[0] in ['OR']:
+            operator = self.current_token()
+            self.advance()
+            right = self.parse_boolean_term()
+            left = LogicalOperation(left, operator, right)
+
+        return left
 
     # TODO: Implement this function
     def parse_boolean_term(self) -> ExprType:
