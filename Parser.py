@@ -84,17 +84,13 @@ class Lexer:
                 list_token.append((type_of_value,int(value)))
 
             elif type_of_value == "IDENTIFIER":
-                key = ['IF', 'ELSE', 'FOR', 'TO','PRINT', 'AND', 'OR', 'NOT']
-                if value in key:
-                    list_token.append((key[value],value))
-                else:
-                    list_token.append((type_of_value,value))
+                key = {'if':'IF', 'else':'ELSE', 'for':'FOR', 'to':'TO','print':'PRINT', 'and':'AND', 'or':'OR', 'not':'NOT'}
+                token_type = key.get(value, 'IDENTIFIER')
+                list_token.append((token_type, value))
 
             elif type_of_value == "MISMATCH":
                 raise SyntaxError(
-                    f"Unexpected token '{list_token}'"
-                    "Expected 'NUMBER', 'IDENTIFIER', or other."
-                )
+                    f"Unexpected character '{value}'" )
             else:
                 list_token.append((type_of_value,value))
 
@@ -173,7 +169,7 @@ class Parser:
         - If it's a 'PRINT', it calls `parse_print_stmt()`.
         This routing is the essence of a top-down recursive descent parser.
         """
-        token_type = self.current_token()
+        token_type = self.current_token()[0]
         
         if token_type == 'IF':
             return self.parse_if_stmt()
@@ -218,7 +214,7 @@ class Parser:
         if self.current_token()[0] == 'ELSE':
             self.expect('ELSE')
             self.expect('COLON')
-            else_block = self.parse_block
+            else_block = self.parse_block()
 
         return IfStatement(condition, then_block, else_block)
 
@@ -234,7 +230,7 @@ class Parser:
         for the loop's body. It bundles all this information into a `ForStatement` AST node.
         """
         self.expect('FOR')
-        iterator  = self.expect("IDENTIFIER")[1]
+        iterator  = self.expect("IDENTIFIER")[0]
 
         self.expect('EQUALS')
         start_str = self.parse_expression()
@@ -332,7 +328,7 @@ class Parser:
         left = self.parse_boolean_term()
 
         while self.current_token()[0] in ['OR']:
-            operator = self.current_token()
+            operator = self.current_token()[0]
             self.advance()
             right = self.parse_boolean_term()
             left = LogicalOperation(left, operator, right)
@@ -352,7 +348,7 @@ class Parser:
         left = self.parse_boolean_factor()
 
         while self.current_token()[0] in ['AND']:
-            operator = self.current_token()
+            operator = self.current_token()[0]
             self.advance()
             right = self.parse_boolean_factor()
             left = LogicalOperation(left, operator, right) #double check
@@ -415,10 +411,10 @@ class Parser:
         """
         left = self.parse_term()
         while self.current_token()[0] in ['PLUS', 'MINUS']:
-            operator = self.current_token()
+            operator = self.current_token()[0]
             self.advance()
             right = self.parse_term()
-            return BinaryOperation(left, operator, right)
+            left = BinaryOperation(left, operator, right)
         
         return left
         
@@ -433,11 +429,11 @@ class Parser:
         '*', '/', and '%' operators. This ensures that `a + b * c` is correctly parsed as `a + (b * c)`.
         """
         left = self.parse_factor()
-        while self.current_token()[0] in ['MULTIPLY', 'MODULO', 'DIVIDE']:
-            operator = self.current_token()
+        while self.current_token()[0] in ['MULTIPLY', ' DIVIDE', 'MODULO']:
+            operator = self.current_token()[0]
             self.advance()
             right = self.parse_factor()
-            return BinaryOperation(left, operator, right)
+            left = BinaryOperation(left, operator, right)
         
         return left
 
@@ -453,7 +449,7 @@ class Parser:
         """
 
         if self.current_token()[0] in ['PLUS','MINUS']:
-            operator = self.current_token()
+            operator = self.current_token()[0]
             self.advance()
             operand = self.parse_factor()
             return UnaryOperation(operator, operand)
@@ -475,17 +471,17 @@ class Parser:
            to parse the entire expression inside the parentheses, and then expects a closing 'RPAREN'.
            This allows for manually overriding operator precedence (e.g., `(a + b) * c`).
         """
-        beatuup= self.current_token()
+        token_type, token_value = self.current_token()
 
-        if beatuup(0) in ['NUMBER']:
+        if token_type in ['NUMBER']:
             self.advance()
-            return beatuup
+            return token_value
 
-        elif beatuup(0) in ['IDENTIFIER']:
+        elif token_type in ['IDENTIFIER']:
             self.advance()
-            return beatuup
+            return ('IDENTIFIER', token_value)
 
-        elif beatuup(0) in ['LPAREN']:
+        elif token_type in ['LPAREN']:
             self.advance()
             expr = self.parse_boolean_expression()
             self.expect('RPAREN') 
@@ -493,7 +489,7 @@ class Parser:
 
         else:
             raise SyntaxError(
-                f"Expected NUMBER, IDENTIFIER, or '(' but got {beatuup} at position {self.pos}"
+                f"Expected NUMBER, IDENTIFIER, or '(' but got {token_type} at position {self.pos}"
             )
 
             
