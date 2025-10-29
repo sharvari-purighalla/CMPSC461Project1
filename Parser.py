@@ -304,19 +304,15 @@ class Parser:
         if self.current_token()[0] == 'RPAREN':
             return lst
 
-
         while self.current_token()[0] != "RPAREN":
             expr = self.parse_expression()
             lst.append(expr)
-
-
 
             if self.current_token()[0] == 'COMMA':
                 self.advance()
 
             elif self.current_token()[0] != 'RPAREN':
-                raise SyntaxError (f"boooo")
-            
+                raise SyntaxError (f"boooo")            
 
         return lst
 
@@ -353,7 +349,15 @@ class Parser:
         it deals with the 'AND' operator and calls `parse_boolean_factor()` for its operands.
         This ensures that expressions like `A and B or C` are parsed as `(A and B) or C`.
         """
-        pass
+        left = self.parse_boolean_factor()
+
+        while self.current_token()[0] in ['AND']:
+            operator = self.current_token()
+            self.advance()
+            right = self.parse_boolean_factor()
+            left = LogicalOperation(left, operator, right) #double check
+
+        return left
 
     # TODO: Implement this function
     def parse_boolean_factor(self) -> ExprType:
@@ -366,7 +370,16 @@ class Parser:
         wraps it in a `UnaryOperation` node. If there is no 'NOT', it simply calls the next
         level of the precedence hierarchy, `parse_comparison()`.
         """
-        pass
+        #UnaryOperation: operator, operand
+        if self.current_token()[0] in ['NOT']:
+            operator = self.current_token()
+            self.advance()
+            operand = self.parse_boolean_factor()
+            return UnaryOperation(operator, operand)
+
+        else:
+            return self.parse_comparison()
+        
 
     # TODO: Implement this function
     def parse_comparison(self) -> ExprType:
