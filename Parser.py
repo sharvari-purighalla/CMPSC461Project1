@@ -181,7 +181,7 @@ class Parser:
             identifier_token = self.expect('IDENTIFIER')
             self.expect('EQUALS')
             expr = self.parse_expression()
-            return ('ASSIGN', identifier_token[1], expr)
+            return Assignment(identifier_token, expr)
         
         else:
             raise SyntaxError(
@@ -230,7 +230,7 @@ class Parser:
         for the loop's body. It bundles all this information into a `ForStatement` AST node.
         """
         self.expect('FOR')
-        iterator  = self.expect("IDENTIFIER")[0]
+        iterator  = self.expect("IDENTIFIER")
 
         self.expect('EQUALS')
         start_str = self.parse_expression()
@@ -327,8 +327,8 @@ class Parser:
         """    
         left = self.parse_boolean_term()
 
-        while self.current_token()[0] in ['OR']:
-            operator = self.current_token()[0]
+        while self.current_token()[0] == 'OR':
+            operator = self.current_token()
             self.advance()
             right = self.parse_boolean_term()
             left = LogicalOperation(left, operator, right)
@@ -347,11 +347,11 @@ class Parser:
         """
         left = self.parse_boolean_factor()
 
-        while self.current_token()[0] in ['AND']:
-            operator = self.current_token()[0]
+        while self.current_token()[0] == 'AND':
+            operator = self.current_token()
             self.advance()
             right = self.parse_boolean_factor()
-            left = LogicalOperation(left, operator, right) #double check
+            left = LogicalOperation(left, operator, right) 
 
         return left
 
@@ -367,14 +367,12 @@ class Parser:
         level of the precedence hierarchy, `parse_comparison()`.
         """
         #UnaryOperation: operator, operand
-        if self.current_token()[0] in ['NOT']:
+        if self.current_token()[0] == 'NOT':
             operator = self.current_token()
             self.advance()
             operand = self.parse_boolean_factor()
             return UnaryOperation(operator, operand)
-
-        else:
-            return self.parse_comparison()
+        return self.parse_comparison()
         
 
     # TODO: Implement this function
@@ -390,7 +388,7 @@ class Parser:
         """
         left = self.parse_expression()
 
-        if self.current_token()[0] in ['PLUS', 'MINUS', 'MULTIPLY', 'DIVIDE', 'MODULO', 'EQ', 'NEQ', 'GREATER', 'LESS', 'EQUALS']:
+        if self.current_token()[0] in ['EQ', 'NEQ', 'GREATER', 'LESS']:
             operator = self.current_token()
             self.advance()
             right = self.parse_expression()
@@ -411,7 +409,7 @@ class Parser:
         """
         left = self.parse_term()
         while self.current_token()[0] in ['PLUS', 'MINUS']:
-            operator = self.current_token()[0]
+            operator = self.current_token()
             self.advance()
             right = self.parse_term()
             left = BinaryOperation(left, operator, right)
@@ -429,8 +427,8 @@ class Parser:
         '*', '/', and '%' operators. This ensures that `a + b * c` is correctly parsed as `a + (b * c)`.
         """
         left = self.parse_factor()
-        while self.current_token()[0] in ['MULTIPLY', ' DIVIDE', 'MODULO']:
-            operator = self.current_token()[0]
+        while self.current_token()[0] in ['MULTIPLY', 'DIVIDE', 'MODULO']:
+            operator = self.current_token()
             self.advance()
             right = self.parse_factor()
             left = BinaryOperation(left, operator, right)
@@ -449,13 +447,11 @@ class Parser:
         """
 
         if self.current_token()[0] in ['PLUS','MINUS']:
-            operator = self.current_token()[0]
+            operator = self.current_token()
             self.advance()
             operand = self.parse_factor()
             return UnaryOperation(operator, operand)
-
-        else:
-            return self.parse_primary()        
+        return self.parse_primary()        
 
     # TODO: Implement this function
     def parse_primary(self) -> ExprType:
@@ -473,15 +469,15 @@ class Parser:
         """
         token_type, token_value = self.current_token()
 
-        if token_type in ['NUMBER']:
+        if token_type == 'NUMBER':
             self.advance()
-            return token_value
+            return ('NUMBER', token_value)
 
-        elif token_type in ['IDENTIFIER']:
+        elif token_type == 'IDENTIFIER':
             self.advance()
             return ('IDENTIFIER', token_value)
 
-        elif token_type in ['LPAREN']:
+        elif token_type == 'LPAREN':
             self.advance()
             expr = self.parse_boolean_expression()
             self.expect('RPAREN') 
